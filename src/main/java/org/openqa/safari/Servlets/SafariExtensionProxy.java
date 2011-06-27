@@ -42,7 +42,7 @@ public class SafariExtensionProxy extends HttpServlet {
 		
 		BlockingQueue<WebDriverCommand> queue = safari.getCommandQueue();
 		try {
-			System.out.println("waiting for a command for session "+session);
+			safari.setReady(true);
 			WebDriverCommand command = queue.take();
 			OutputStream out = resp.getOutputStream();
 			out.write(command.toJSON().toString().getBytes("UTF-8"));

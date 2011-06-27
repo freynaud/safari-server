@@ -66,4 +66,8 @@ public class WebDriverCommand {
 		}
 
 	}
+
+	public boolean isGetSession() {
+		return "get".equalsIgnoreCase(method) && path.startsWith("/session");
+	}
 }

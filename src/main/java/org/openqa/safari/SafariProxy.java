@@ -20,6 +20,7 @@ public class SafariProxy {
 	private DesiredCapabilities capabilities;
 	private final BlockingQueue<WebDriverCommand> commands = new LinkedBlockingQueue<WebDriverCommand>();
 	private Process safari;
+	private boolean ready = false;
 
 	public SafariProxy() {
 
@@ -45,6 +46,21 @@ public class SafariProxy {
 		} catch (Throwable t) {
 			throw new RuntimeException(t);
 		}
+
+		waitForSafariToRepostBack();
+	}
+
+	private void waitForSafariToRepostBack() {
+		while (!isReady()){
+			System.out.println("safari not quite ready yet.");
+			try {
+				Thread.sleep(250);
+			} catch (InterruptedException e) {
+				//
+			}
+		}
+		System.out.println("safari is ready ? "+isReady());
+
 	}
 
 	public void quit() {
@@ -61,5 +77,13 @@ public class SafariProxy {
 
 	public BlockingQueue<WebDriverCommand> getCommandQueue() {
 		return commands;
+	}
+
+	public boolean isReady() {
+		return ready;
+	}
+
+	public void setReady(boolean ready) {
+		this.ready = ready;
 	}
 }
