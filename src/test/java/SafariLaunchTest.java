@@ -39,8 +39,7 @@ public class SafariLaunchTest {
 	public void safariBadUrl() throws MalformedURLException {
 		WebDriver driver = null;
 		try {
-			//driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
-			driver = new FirefoxDriver();
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
 			driver.get("http://ebay.com");
 			driver.get("htfgdkfghklsjdfh");
 		} finally {
