@@ -25,6 +25,7 @@ import org.openqa.safari.SafariProxy;
 import org.openqa.safari.Utils;
 import org.openqa.selenium.Platform;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.Response;
 
 /**
  * recieves the command from the test/
@@ -35,29 +36,41 @@ import org.openqa.selenium.remote.DesiredCapabilities;
 public class CommandServlet extends HttpServlet {
 
 	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		process(request, response);
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		try {
+			process(req, resp);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		process(request, response);
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		try {
+			process(req, resp);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		process(req, resp);
+		try {
+			process(req, resp);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private CommandHandlerFactory factory = new CommandHandlerFactory();
 
-	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		
+	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException, JSONException {
+
 		WebDriverCommand command = new WebDriverCommand();
 		command.setMethod(request.getMethod());
 		command.setPath(request.getPathInfo());
 		command.setContent(extractBody(request));
-		System.out.println("got a " + request.getMethod() + " on " + request.getPathInfo()+" : "+command.getContent());
+		System.out.println("got a " + request.getMethod() + " on " + request.getPathInfo() + " : " + command.getContent());
 		response.setContentType("application/json");
 
 		SafariProxy safari = null;
@@ -68,18 +81,20 @@ public class CommandServlet extends HttpServlet {
 			safari.launch();
 			response.addHeader("location", request.getServletPath() + "/session/" + session);
 			response.setStatus(303);
-			safari.noResponseFromExtensionExpected();
+			JSONObject o = Utils.getResponse(session, 0, new JSONObject());
+			safari.noResponseFromExtensionExpected(o);
 		} else if (command.isDeleteSession()) {
 			String session = Utils.extractSessionFromPath(request.getPathInfo());
 			safari = Driver.safaris.get(session);
-			safari.noResponseFromExtensionExpected();
+			JSONObject o = Utils.getResponse(session, 0, new JSONObject());
+			safari.noResponseFromExtensionExpected(o);
 			safari.quit();
 		} else if (command.isGetSession()) {
 			String session = Utils.extractSessionFromPath(request.getPathInfo());
 			safari = Driver.safaris.get(session);
 			JSONObject cap = new JSONObject(new DesiredCapabilities("safari", "5.0", Platform.getCurrent()).asMap());
-			safari.noResponseFromExtensionExpected();
-			write(command.getSession(), 0, cap, response);
+			JSONObject o = Utils.getResponse(session, 0, cap);
+			safari.noResponseFromExtensionExpected(o);
 		} else {
 			String session = Utils.extractSessionFromPath(request.getPathInfo());
 			safari = Driver.safaris.get(session);
@@ -87,21 +102,17 @@ public class CommandServlet extends HttpServlet {
 			System.out.println("Cammand added to the queue.");
 		}
 
-		System.out.println(safari.getResponse());
+		JSONObject r = safari.getResponse();
+		if (r.getInt("status") != 0) {
+			response.setStatus(500);
+		}
+		write(r, response);
 
 	}
 
-	private void write(String session, int status, JSONObject value, HttpServletResponse resp) {
-		try {
-			JSONObject res = new JSONObject();
-			res.put("sessionId", session);
-			res.put("status", status);
-			res.put("value", value);
-			OutputStream out = resp.getOutputStream();
-			out.write(res.toString().getBytes("UTF-8"));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	private void write(JSONObject o, HttpServletResponse resp) throws UnsupportedEncodingException, IOException {
+		OutputStream out = resp.getOutputStream();
+		out.write(o.toString().getBytes("UTF-8"));
 
 	}
 

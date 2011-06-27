@@ -48,11 +48,7 @@ public class SafariExtensionProxy extends HttpServlet {
 		System.out.println("extension calling");
 		if (req.getPathInfo().contains("result")) {
 			JSONObject r = extractBody(req);
-			if (r == null) {
-				// TODO error.
-				r = new JSONObject();
-			}
-			safari.updateResponse(r.toString());
+			safari.updateResponse(r);
 		} else {
 			BlockingQueue<WebDriverCommand> queue = safari.getCommandQueue();
 
@@ -64,7 +60,7 @@ public class SafariExtensionProxy extends HttpServlet {
 				OutputStream out = resp.getOutputStream();
 				out.write(command.toJSON().toString().getBytes("UTF-8"));
 			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+				System.err.println("kicked out");
 			}
 		}
 
@@ -93,6 +89,7 @@ public class SafariExtensionProxy extends HttpServlet {
 			return null;
 		}
 		try {
+			System.out.println("got "+body+" from the ext.");
 			return new JSONObject(body);
 		} catch (JSONException e) {
 			throw new RuntimeException(e);

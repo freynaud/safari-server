@@ -1,5 +1,8 @@
 package org.openqa.safari;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class Utils {
 
 	public static String extractSessionFromPath(String path) {
@@ -22,5 +25,22 @@ public class Utils {
 			return session;
 		}
 		return null;
+	}
+
+	public static JSONObject getResponse(String session, int status, JSONObject value) {
+		try {
+			JSONObject res = new JSONObject();
+			res.put("sessionId", session);
+			res.put("status", status);
+			if (value != null) {
+				res.put("value", value);
+			} else {
+				res.put("value", JSONObject.NULL);
+			}
+			return res;
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 }

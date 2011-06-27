@@ -12,6 +12,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.openqa.WebDriverCommand;
 import org.openqa.selenium.browserlaunchers.locators.BrowserInstallation;
 import org.openqa.selenium.browserlaunchers.locators.SafariLocator;
@@ -92,10 +94,10 @@ public class SafariProxy {
 		this.ready = ready;
 	}
 
-	String response;
+	JSONObject response;
 	boolean waitForExtension = true;
 
-	public void updateResponse(String resp) {
+	public void updateResponse(JSONObject resp) {
 		this.response = resp;
 		try {
 			ext.lock();
@@ -106,7 +108,7 @@ public class SafariProxy {
 
 	}
 
-	public String getResponse() {
+	public JSONObject getResponse() {
 		if (waitForExtension) {
 			try {
 				ext.lock();
@@ -122,9 +124,9 @@ public class SafariProxy {
 
 	}
 
-	public void noResponseFromExtensionExpected() {
+	public void noResponseFromExtensionExpected(JSONObject json) {
 		waitForExtension = false;
-		response = "ok hardcoded.";
+		response = json;
 
 	}
 }
