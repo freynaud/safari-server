@@ -24,6 +24,10 @@ public class SafariLaunchTest {
 	public void safariStarts() throws MalformedURLException, InterruptedException{
 		WebDriver driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"),DesiredCapabilities.firefox());
 		driver.get("http://ebay.com");
+		driver.get("http://ebay.co.uk");
+		driver.get("http://ebay.de");
+		driver.get("http://google.com");
+		
 		Thread.sleep(10000);
 		driver.quit();
 	}

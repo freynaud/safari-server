@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.openqa.WebDriverCommand;
 import org.openqa.selenium.browserlaunchers.locators.BrowserInstallation;
@@ -21,6 +24,8 @@ public class SafariProxy {
 	private final BlockingQueue<WebDriverCommand> commands = new LinkedBlockingQueue<WebDriverCommand>();
 	private Process safari;
 	private boolean ready = false;
+	private Lock ext = new ReentrantLock();
+	private Condition extReady = ext.newCondition();
 
 	public SafariProxy() {
 
@@ -51,7 +56,7 @@ public class SafariProxy {
 	}
 
 	private void waitForSafariToRepostBack() {
-		while (!isReady()){
+		while (!isReady()) {
 			System.out.println("safari not quite ready yet.");
 			try {
 				Thread.sleep(250);
@@ -59,7 +64,7 @@ public class SafariProxy {
 				//
 			}
 		}
-		System.out.println("safari is ready ? "+isReady());
+		System.out.println("safari is ready ? " + isReady());
 
 	}
 
@@ -85,5 +90,41 @@ public class SafariProxy {
 
 	public void setReady(boolean ready) {
 		this.ready = ready;
+	}
+
+	String response;
+	boolean waitForExtension = true;
+
+	public void updateResponse(String resp) {
+		this.response = resp;
+		try {
+			ext.lock();
+			extReady.signal();
+		} finally {
+			ext.unlock();
+		}
+
+	}
+
+	public String getResponse() {
+		if (waitForExtension) {
+			try {
+				ext.lock();
+				extReady.await();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} finally {
+				ext.unlock();
+			}
+		}
+		waitForExtension = true;
+		return response;
+
+	}
+
+	public void noResponseFromExtensionExpected() {
+		waitForExtension = false;
+		response = "ok hardcoded.";
+
 	}
 }

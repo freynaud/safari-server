@@ -52,38 +52,46 @@ public class CommandServlet extends HttpServlet {
 	private CommandHandlerFactory factory = new CommandHandlerFactory();
 
 	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		System.out.println("got a "+request.getMethod()+" on "+request.getPathInfo());
+		
 		WebDriverCommand command = new WebDriverCommand();
 		command.setMethod(request.getMethod());
 		command.setPath(request.getPathInfo());
 		command.setContent(extractBody(request));
-		System.out.println("got content "+command.getContent());
+		System.out.println("got a " + request.getMethod() + " on " + request.getPathInfo()+" : "+command.getContent());
 		response.setContentType("application/json");
-		
-		
+
+		SafariProxy safari = null;
 		if (command.isNewSession()) {
-			SafariProxy safari = new SafariProxy();
+			safari = new SafariProxy();
 			String session = safari.getSession();
 			Driver.safaris.put(session, safari);
 			safari.launch();
-			response.addHeader("location", request.getServletPath()+"/session/"+session);
+			response.addHeader("location", request.getServletPath() + "/session/" + session);
 			response.setStatus(303);
+			safari.noResponseFromExtensionExpected();
 		} else if (command.isDeleteSession()) {
 			String session = Utils.extractSessionFromPath(request.getPathInfo());
-			SafariProxy safari = Driver.safaris.get(session);
+			safari = Driver.safaris.get(session);
+			safari.noResponseFromExtensionExpected();
 			safari.quit();
-		}else if (command.isGetSession()){
+		} else if (command.isGetSession()) {
+			String session = Utils.extractSessionFromPath(request.getPathInfo());
+			safari = Driver.safaris.get(session);
 			JSONObject cap = new JSONObject(new DesiredCapabilities("safari", "5.0", Platform.getCurrent()).asMap());
+			safari.noResponseFromExtensionExpected();
 			write(command.getSession(), 0, cap, response);
 		} else {
 			String session = Utils.extractSessionFromPath(request.getPathInfo());
-			SafariProxy safari = Driver.safaris.get(session);
+			safari = Driver.safaris.get(session);
 			safari.addCommand(command);
+			System.out.println("Cammand added to the queue.");
 		}
 
+		System.out.println(safari.getResponse());
+
 	}
-	
-	private void write(String session,int status,JSONObject value,HttpServletResponse resp){
+
+	private void write(String session, int status, JSONObject value, HttpServletResponse resp) {
 		try {
 			JSONObject res = new JSONObject();
 			res.put("sessionId", session);
@@ -94,7 +102,7 @@ public class CommandServlet extends HttpServlet {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
 	}
 
 	private static JSONObject extractBody(HttpServletRequest request) {

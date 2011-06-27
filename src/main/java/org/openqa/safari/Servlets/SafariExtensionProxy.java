@@ -1,7 +1,11 @@
 package org.openqa.safari.Servlets;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.BlockingQueue;
 
 import javax.servlet.ServletException;
@@ -9,6 +13,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.openqa.Driver;
 import org.openqa.WebDriverCommand;
 import org.openqa.safari.SafariProxy;
@@ -17,7 +23,7 @@ import org.openqa.safari.Utils;
 /**
  * 
  * @author freynaud
- *
+ * 
  */
 public class SafariExtensionProxy extends HttpServlet {
 
@@ -39,19 +45,58 @@ public class SafariExtensionProxy extends HttpServlet {
 	private void process(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		String session = Utils.extractSessionFromPath(req.getPathInfo());
 		SafariProxy safari = Driver.safaris.get(session);
-		
-		BlockingQueue<WebDriverCommand> queue = safari.getCommandQueue();
+		System.out.println("extension calling");
+		if (req.getPathInfo().contains("result")) {
+			JSONObject r = extractBody(req);
+			if (r == null) {
+				// TODO error.
+				r = new JSONObject();
+			}
+			safari.updateResponse(r.toString());
+		} else {
+			BlockingQueue<WebDriverCommand> queue = safari.getCommandQueue();
+
+			try {
+				safari.setReady(true);
+				System.out.println("blocked waiting for a command");
+				WebDriverCommand command = queue.take();
+				System.out.println("sending command " + command);
+				OutputStream out = resp.getOutputStream();
+				out.write(command.toJSON().toString().getBytes("UTF-8"));
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
+	private static JSONObject extractBody(HttpServletRequest request) {
+		StringBuilder sb = new StringBuilder();
+		String line;
 		try {
-			safari.setReady(true);
-			WebDriverCommand command = queue.take();
-			OutputStream out = resp.getOutputStream();
-			out.write(command.toJSON().toString().getBytes("UTF-8"));
-		} catch (InterruptedException e) {
+			InputStream is = request.getInputStream();
+			if (is == null) {
+				return null;
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+			while ((line = reader.readLine()) != null) {
+				sb.append(line);/* .append("\n"); */
+			}
+			is.close();
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		
-		
+		String body = sb.toString();
+		if ("".equals(body)) {
+			return null;
+		}
+		try {
+			return new JSONObject(body);
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
+		}
 	}
-	
-	
+
 }
