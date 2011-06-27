@@ -55,9 +55,9 @@ public class WebDriverCommand {
 			res.put("method", path);
 			res.put("path", path);
 			if (content == null) {
-				res.put("data", JSONObject.NULL);
+				res.put("content", JSONObject.NULL);
 			} else {
-				res.put("data", content);
+				res.put("content", content);
 
 			}
 			return res;

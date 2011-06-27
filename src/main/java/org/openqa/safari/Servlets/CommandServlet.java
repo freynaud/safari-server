@@ -57,7 +57,7 @@ public class CommandServlet extends HttpServlet {
 		command.setMethod(request.getMethod());
 		command.setPath(request.getPathInfo());
 		command.setContent(extractBody(request));
-		
+		System.out.println("got content "+command.getContent());
 		response.setContentType("application/json");
 		
 		
@@ -90,7 +90,6 @@ public class CommandServlet extends HttpServlet {
 			res.put("status", status);
 			res.put("value", value);
 			OutputStream out = resp.getOutputStream();
-			System.out.println("sending "+res.toString());
 			out.write(res.toString().getBytes("UTF-8"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
