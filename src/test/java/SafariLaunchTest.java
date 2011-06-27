@@ -3,6 +3,7 @@ import java.net.URL;
 
 import org.openqa.Driver;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -35,13 +36,27 @@ public class SafariLaunchTest {
 
 	}
 
-	@Test
+	@Test(expectedExceptions=WebDriverException.class)
 	public void safariBadUrl() throws MalformedURLException {
 		WebDriver driver = null;
 		try {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
 			driver.get("http://ebay.com");
 			driver.get("htfgdkfghklsjdfh");
+		} finally {
+			driver.quit();
+		}
+
+	}
+	
+	
+	@Test(invocationCount=10,threadPoolSize=10,timeOut=10000)
+	public void safariStartsInParallel() throws MalformedURLException, InterruptedException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://ebay.com");
+			driver.get("http://ebay.co.uk");
 		} finally {
 			driver.quit();
 		}

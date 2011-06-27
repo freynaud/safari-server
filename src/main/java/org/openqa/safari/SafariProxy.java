@@ -30,7 +30,7 @@ public class SafariProxy {
 	private Condition extReady = ext.newCondition();
 
 	public SafariProxy() {
-
+		System.out.println("created proxy "+session);
 	}
 
 	public void launch() {
@@ -41,7 +41,7 @@ public class SafariProxy {
 		cmd.add(exe);
 
 		try {
-			File f = new File("sessionId.html");
+			File f = new File(session+".html");
 			FileWriter fstream = new FileWriter(f);
 			BufferedWriter out = new BufferedWriter(fstream);
 			out.write("<html><head><meta http-equiv='refresh' content='0;url=http://localhost:9999/safari-init/" + session + "'  ></head></html>");
