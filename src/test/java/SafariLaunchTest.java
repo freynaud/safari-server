@@ -50,12 +50,11 @@ public class SafariLaunchTest {
 	}
 	
 	
-	@Test(invocationCount=10,threadPoolSize=10,timeOut=10000)
+	@Test(invocationCount=10,threadPoolSize=10,timeOut=20000)
 	public void safariStartsInParallel() throws MalformedURLException, InterruptedException {
 		WebDriver driver = null;
 		try {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
-			driver.get("http://ebay.com");
 			driver.get("http://ebay.co.uk");
 		} finally {
 			driver.quit();
