@@ -48,6 +48,7 @@ public class SafariProxy {
 
 		try {
 			File f = new File(session + ".html");
+			f.deleteOnExit();
 			FileWriter fstream = new FileWriter(f);
 			BufferedWriter out = new BufferedWriter(fstream);
 			out.write("<html><head><meta http-equiv='refresh' content='0;url=http://localhost:9999/safari-init/" + session + "'  ></head></html>");
