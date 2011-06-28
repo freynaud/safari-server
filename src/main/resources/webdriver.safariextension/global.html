@@ -20,13 +20,13 @@
 
 	// Function to perform when event is received
 	function performCommand(event) {
-		
+
 		var json = new Object();
 		json.method = "GET";
 		json.path = "path";
 		json.genericPath = "/session/:sessionId/title";
 		json.content = new Object();
-		
+
 		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 	}
 
@@ -104,17 +104,30 @@
 
 		if (method === "POST" && genericPath === "/session/:sessionId/url") {
 			openURL(json);
-		} else if (method === "GET" && genericPath === "/session/:sessionId/title") {
+		} else if (shouldDelegateToInjected(json)) {
 			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 		} else {
 			var result = new Object();
 			result.status = 13;
 			result.sessionId = session;
 			result.value = new Object();
-			result.value.message = 'not implemented : ' + genericPath;
+			result.value.message = 'GLOBAL : not implemented : ' + method + " : " + genericPath;
 			sendCommandResult(result);
 		}
+	}
 
+	function shouldDelegateToInjected(json) {
+		var method = json.method;
+		var genericPath = json.genericPath;
+		var content = json.content;
+		alert(method + " - "+ genericPath);
+		if (method === "GET" && genericPath === "/session/:sessionId/title") {
+			return true;
+		}
+		if (method === "POST" && genericPath === "/session/:sessionId/element") {
+			return true;
+		}
+		return false;
 	}
 
 	function openURL(json) {

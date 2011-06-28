@@ -26,7 +26,7 @@ function handleMessage(event) {
 				result.value = title;
 			} else {
 				result.status = 13;
-				result.value.message = "Command "+method+" : "+ genericPath+" is not implemented in injected.js";
+				result.value.message = "INJECTED : "+method+" : "+ genericPath+" is not implemented in injected.js";
 			}
 			safari.self.tab.dispatchMessage("result", result);
 		}

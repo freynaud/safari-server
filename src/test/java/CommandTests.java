@@ -2,7 +2,9 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.openqa.Driver;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.testng.annotations.AfterClass;
@@ -25,6 +27,20 @@ public class CommandTests {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
 			driver.get("http://ebay.co.uk");
 			System.out.println(driver.getTitle());
+		} finally {
+			driver.quit();
+
+		}
+
+	}
+	
+	@Test
+	public void getElement() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://ebay.co.uk");
+			WebElement el = driver.findElement(By.id("test"));
 		} finally {
 			driver.quit();
 
