@@ -36,18 +36,49 @@ function handleMessage(event) {
 	}
 }
 
+function simulateClick(content) {
+	var internalId = content.id;
+	var element = cache[internalId];
+	var evt = document.createEvent("MouseEvents");
+	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+	element.dispatchEvent(evt);
+}
+
 function sendKeys(content) {
 	var internalId = content.id;
 	var value = content.value;
 	var element = cache[internalId];
 	var result = createResult();
 	if (element) {
-		element.value = value;
+		element.focus();
+		log(value +" - "+value.length);
+		for (i = 0; i < value.length; i++) {
+			var c = value[i];
+			keyDown(c, element);
+			element.value = element.value +c;
+			keyUp(c, element);
+		}
 	} else {
 		result.state = "10";
 		result.value.message = "element not in the cache";
 	}
 	return result;
+}
+
+function keyUp(key, el) {
+	var evt = document.createEvent("KeyboardEvent");
+	evt.initKeyboardEvent('keyup', false, true, null, false, false, false, false, 0, key);
+	el.dispatchEvent(evt);
+
+}
+function keyDown(key, el) {
+	log("1");
+	var evt = document.createEvent("KeyboardEvent");
+	log("1");
+	evt.initKeyboardEvent('keydown', false, true, null, false, false, false, false, 0, key);
+	log("1");
+	el.dispatchEvent(evt);
+	log("1");
 }
 
 function getTitle() {

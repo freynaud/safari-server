@@ -74,7 +74,6 @@ public class CommandTests {
 			el.sendKeys("ferret");
 		} finally {
 			driver.quit();
-
 		}
 	}
 	
