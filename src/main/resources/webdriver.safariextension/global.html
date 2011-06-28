@@ -93,8 +93,18 @@
 		var path = json.path;
 		var genericPath = json.genericPath;
 		var content = json.content;
-		//alert("generic:"+ genericPath+",method:"+method);
-		openURL(json);
+		
+		if (method === "POST" && genericPath === "/session/:sessionId/url"){
+			openURL(json);	
+		}else {
+			var result = new Object();
+			result.status = 13;
+			result.sessionId = session;
+			result.value = new Object();
+			result.value.message ='not implemented : '+genericPath;
+			sendCommandResult(result);
+		}
+		
 	}
 
 	function openURL(json) {

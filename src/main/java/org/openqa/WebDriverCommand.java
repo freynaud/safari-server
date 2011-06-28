@@ -77,6 +77,6 @@ public class WebDriverCommand {
 	}
 
 	public boolean isGetSession() {
-		return "get".equalsIgnoreCase(method) && path.startsWith("/session");
+		return "get".equalsIgnoreCase(method) && "/session/:sessionId".equals(genericPath);
 	}
 }
