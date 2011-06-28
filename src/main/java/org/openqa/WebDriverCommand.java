@@ -8,8 +8,8 @@ public class WebDriverCommand {
 
 	private String method;
 	private String path;
-	private String genericPath;
 	private JSONObject content;
+	
 
 	public WebDriverCommand() {
 
@@ -29,13 +29,8 @@ public class WebDriverCommand {
 
 	public void setPath(String path) {
 		this.path = path;
-		String session = Utils.extractSessionFromPath(path);
-		if (session != null) {
-			genericPath = path.replace(session, ":sessionId");
-		} else {
-			genericPath = path;
-		}
 	}
+	
 
 	public JSONObject getContent() {
 		return content;
@@ -62,13 +57,20 @@ public class WebDriverCommand {
 			JSONObject res = new JSONObject();
 			res.put("method", method);
 			res.put("path", path);
-			res.put("genericPath", genericPath);
+			res.put("genericPath", Utils.getGenericPath(path));
+			
+			String elementId = Utils.extractElementIdFromPath(path);
+			if (elementId!=null){
+				res.put("id", elementId);
+			}
+			
 			if (content == null) {
 				res.put("content", JSONObject.NULL);
 			} else {
 				res.put("content", content);
 
 			}
+			
 			return res;
 		} catch (JSONException e) {
 			throw new RuntimeException(e);
@@ -77,6 +79,6 @@ public class WebDriverCommand {
 	}
 
 	public boolean isGetSession() {
-		return "get".equalsIgnoreCase(method) && "/session/:sessionId".equals(genericPath);
+		return "get".equalsIgnoreCase(method) && "/session/:sessionId".equals(Utils.getGenericPath(path));
 	}
 }

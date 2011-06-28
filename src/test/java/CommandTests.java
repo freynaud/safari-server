@@ -64,6 +64,20 @@ public class CommandTests {
 		}
 	}
 	
+	@Test(invocationCount=load,threadPoolSize=load)
+	public void setValue() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://ebay.co.uk");	
+			WebElement el = driver.findElement(By.id("_nkw"));
+			el.sendKeys("ferret");
+		} finally {
+			driver.quit();
+
+		}
+	}
+	
 	
 
 	@AfterClass

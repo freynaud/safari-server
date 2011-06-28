@@ -23,7 +23,10 @@ function handleMessage(event) {
 				result = getTitle();
 			} else if (method === "POST" && genericPath === "/session/:sessionId/element") {
 				result = findElement(content);
+			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value") {
+				result = sendKeys(content);
 			} else {
+
 				result = result();
 				result.status = 13;
 				result.value.message = "INJECTED : " + method + " : " + genericPath + " is not implemented in injected.js";
@@ -31,6 +34,20 @@ function handleMessage(event) {
 			safari.self.tab.dispatchMessage("result", result);
 		}
 	}
+}
+
+function sendKeys(content) {
+	var internalId = content.id;
+	var value = content.value;
+	var element = cache[internalId];
+	var result = createResult();
+	if (element) {
+		element.value = value;
+	} else {
+		result.state = "10";
+		result.value.message = "element not in the cache";
+	}
+	return result;
 }
 
 function getTitle() {
@@ -43,12 +60,12 @@ function findElement(content) {
 	log("find element");
 	var using = content.using;
 	var value = content.value;
-	log('by '+using+" = "+value);
+	log('by ' + using + " = " + value);
 	var result = createResult();
 	log(result);
-	if ( using === "id") {
+	if (using === "id") {
 		var el = document.getElementById(value);
-		log('found '+el );
+		log('found ' + el);
 		if (el) {
 			var id = generateId();
 			log('new element found ' + id + ' using strategy ' + using + ', value =' + value);
@@ -56,7 +73,7 @@ function findElement(content) {
 			cache[id] = el;
 		} else {
 			result.status = 7;
-			result.value.message = "page loaded:"+ document.readyState+"couldn't find the element using strategy By."+using +"="+value;
+			result.value.message = "page loaded:" + document.readyState + "couldn't find the element using strategy By." + using + "=" + value;
 		}
 	} else {
 		log("not supported strategy");

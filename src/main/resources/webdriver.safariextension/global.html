@@ -27,9 +27,21 @@
 		json.genericPath = "/session/:sessionId/element";
 		json.content = new Object();
 		json.content.using = "id";
-		json.content.value="registerLink";
+		json.content.value="_nkw";
 
 		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
+		
+		json = new Object();
+		json.method = "POST";
+		json.path = "path";
+		json.genericPath = "/session/:sessionId/element/:id/value";
+		json.content = new Object();
+		json.content.id = "1";
+		json.content.value="ferret";
+
+		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
+		
+		
 	}
 
 	function message(msgEvent) {
@@ -127,6 +139,9 @@
 			return true;
 		}
 		if (method === "POST" && genericPath === "/session/:sessionId/element") {
+			return true;
+		}
+		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value"){
 			return true;
 		}
 		return false;

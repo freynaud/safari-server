@@ -43,4 +43,40 @@ public class Utils {
 		}
 
 	}
+
+	public static String extractElementIdFromPath(String path) {
+		if (path == null) {
+			return null;
+		}
+		int elementIndex = path.indexOf("/element/");
+		if (elementIndex != -1) {
+			elementIndex += "/element/".length();
+			int nextSlash = path.indexOf("/", elementIndex);
+			String el = null;
+			if (nextSlash != -1) {
+				el = path.substring(elementIndex, nextSlash);
+			} else {
+				el = path.substring(elementIndex, path.length());
+			}
+			if ("".equals(el)) {
+				return null;
+			}
+			return el;
+		}
+		return null;
+	}
+
+	public static String getGenericPath(String path) {
+		String res = path;
+		String session = extractSessionFromPath(path);
+		if (session != null) {
+			res = res.replace(session, ":sessionId");
+		}
+		String elementId = extractElementIdFromPath(path);
+		if (elementId != null) {
+			res = res.replaceAll(elementId, ":id");
+		}
+		return res;
+
+	}
 }
