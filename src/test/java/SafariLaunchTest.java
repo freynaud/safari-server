@@ -1,5 +1,8 @@
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.openqa.Driver;
 import org.openqa.selenium.WebDriver;
@@ -14,8 +17,6 @@ import org.testng.annotations.Test;
 public class SafariLaunchTest {
 
 	Driver d = new Driver();
-	
-	
 
 	@BeforeClass
 	public void startServer() throws Exception {
@@ -23,7 +24,7 @@ public class SafariLaunchTest {
 	}
 
 	@Test
-	public void safariStarts() throws MalformedURLException, InterruptedException {
+	public void safariStarts() throws InterruptedException, IOException {
 		WebDriver driver = null;
 		try {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
@@ -35,8 +36,9 @@ public class SafariLaunchTest {
 		}
 
 	}
+	
 
-	@Test(expectedExceptions=WebDriverException.class)
+	@Test(expectedExceptions = WebDriverException.class)
 	public void safariBadUrl() throws MalformedURLException {
 		WebDriver driver = null;
 		try {
@@ -48,9 +50,8 @@ public class SafariLaunchTest {
 		}
 
 	}
-	
-	
-	@Test(invocationCount=10,threadPoolSize=10,timeOut=20000)
+
+	@Test(invocationCount = 10, threadPoolSize = 10, timeOut = 20000)
 	public void safariStartsInParallel() throws MalformedURLException, InterruptedException {
 		WebDriver driver = null;
 		try {

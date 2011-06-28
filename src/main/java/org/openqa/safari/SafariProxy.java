@@ -19,6 +19,12 @@ import org.openqa.selenium.browserlaunchers.locators.BrowserInstallation;
 import org.openqa.selenium.browserlaunchers.locators.SafariLocator;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+/**
+ * represent a safari browser object on the server side.
+ * 
+ * @author freynaud
+ * 
+ */
 public class SafariProxy {
 
 	private final String session = UUID.randomUUID().toString();
@@ -30,10 +36,10 @@ public class SafariProxy {
 	private Condition extReady = ext.newCondition();
 
 	public SafariProxy() {
-		System.out.println("created proxy "+session);
+		System.out.println("created proxy " + session);
 	}
 
-	public void launch() {
+	public void launch(DesiredCapabilities cap) {
 		SafariLocator locator = new SafariLocator();
 		BrowserInstallation install = locator.findBrowserLocation();
 		String exe = install.launcherFilePath();
@@ -41,23 +47,29 @@ public class SafariProxy {
 		cmd.add(exe);
 
 		try {
-			File f = new File(session+".html");
+			File f = new File(session + ".html");
 			FileWriter fstream = new FileWriter(f);
 			BufferedWriter out = new BufferedWriter(fstream);
 			out.write("<html><head><meta http-equiv='refresh' content='0;url=http://localhost:9999/safari-init/" + session + "'  ></head></html>");
 			out.close();
 			cmd.add(f.getName());
 			ProcessBuilder builder = new ProcessBuilder(cmd);
-			safari = builder.start();
+
+			try {
+				SystemWideConfiguration.getInstance().configureSystem(cap);
+				safari = builder.start();
+			} finally {
+				SystemWideConfiguration.getInstance().releaseAndCleanSystem();
+			}
 
 		} catch (Throwable t) {
 			throw new RuntimeException(t);
 		}
 
-		waitForSafariToRepostBack();
+		waitForSafariToReportBack();
 	}
 
-	private void waitForSafariToRepostBack() {
+	private void waitForSafariToReportBack() {
 		while (!isReady()) {
 			System.out.println("safari not quite ready yet.");
 			try {
@@ -66,8 +78,6 @@ public class SafariProxy {
 				//
 			}
 		}
-		System.out.println("safari is ready ? " + isReady());
-
 	}
 
 	public void quit() {

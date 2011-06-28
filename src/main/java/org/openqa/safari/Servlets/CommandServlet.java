@@ -25,6 +25,7 @@ import org.openqa.safari.SafariProxy;
 import org.openqa.safari.Utils;
 import org.openqa.selenium.Platform;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.JsonToBeanConverter;
 import org.openqa.selenium.remote.Response;
 
 /**
@@ -78,7 +79,10 @@ public class CommandServlet extends HttpServlet {
 			safari = new SafariProxy();
 			String session = safari.getSession();
 			Driver.safaris.put(session, safari);
-			safari.launch();
+			
+			JsonToBeanConverter conveter = new JsonToBeanConverter();
+			DesiredCapabilities requested = conveter.convert(DesiredCapabilities.class, command.getContent().get("desiredCapabilities"));
+			safari.launch(requested);
 			response.addHeader("location", request.getServletPath() + "/session/" + session);
 			response.setStatus(303);
 			JSONObject o = Utils.getResponse(session, 0, new JSONObject());
