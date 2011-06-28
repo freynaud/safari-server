@@ -22,10 +22,12 @@
 	function performCommand(event) {
 
 		var json = new Object();
-		json.method = "GET";
+		json.method = "POST";
 		json.path = "path";
-		json.genericPath = "/session/:sessionId/title";
+		json.genericPath = "/session/:sessionId/element";
 		json.content = new Object();
+		json.content.using = "id";
+		json.content.value="registerLink";
 
 		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 	}
@@ -120,7 +122,7 @@
 		var method = json.method;
 		var genericPath = json.genericPath;
 		var content = json.content;
-		alert(method + " - "+ genericPath);
+		//alert(method + " - "+ genericPath);
 		if (method === "GET" && genericPath === "/session/:sessionId/title") {
 			return true;
 		}

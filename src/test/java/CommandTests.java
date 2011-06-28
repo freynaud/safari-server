@@ -3,6 +3,7 @@ import java.net.URL;
 
 import org.openqa.Driver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -13,6 +14,8 @@ import org.testng.annotations.Test;
 
 public class CommandTests {
 
+	protected final int load = 1; 
+	
 	Driver d = new Driver();
 
 	@BeforeClass
@@ -20,7 +23,7 @@ public class CommandTests {
 		d.start();
 	}
 
-	@Test
+	@Test(invocationCount=load,threadPoolSize=load)
 	public void getTitle() throws InterruptedException, IOException {
 		WebDriver driver = null;
 		try {
@@ -34,8 +37,8 @@ public class CommandTests {
 
 	}
 	
-	@Test
-	public void getElement() throws InterruptedException, IOException {
+	@Test(invocationCount=load,threadPoolSize=load,expectedExceptions = NoSuchElementException.class)
+	public void getElementNeg() throws InterruptedException, IOException {
 		WebDriver driver = null;
 		try {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
@@ -45,8 +48,23 @@ public class CommandTests {
 			driver.quit();
 
 		}
-
 	}
+	
+
+	@Test(invocationCount=load,threadPoolSize=load)
+	public void getElement() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://ebay.co.uk");	
+			WebElement el = driver.findElement(By.id("registerLink"));
+		} finally {
+			driver.quit();
+
+		}
+	}
+	
+	
 
 	@AfterClass
 	public void stop() throws InterruptedException {
