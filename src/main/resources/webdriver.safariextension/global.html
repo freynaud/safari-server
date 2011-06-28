@@ -39,6 +39,11 @@
 			server = serverBase + session;
 			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("initDone", true);
 			waitForCommand();
+		} else if (name === "result") {
+			var result = data;
+			result.session = session;
+			sendCommandResult(result);
+
 		} else {
 			waitForCommand();
 		}
@@ -93,18 +98,21 @@
 		var path = json.path;
 		var genericPath = json.genericPath;
 		var content = json.content;
-		
-		if (method === "POST" && genericPath === "/session/:sessionId/url"){
-			openURL(json);	
-		}else {
+
+		if (method === "POST" && genericPath === "/session/:sessionId/url") {
+			openURL(json);
+		} else if (method === "GET" && genericPath === "/session/:sessionId/title") {
+			alert('sending getTtile');
+			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
+		} else {
 			var result = new Object();
 			result.status = 13;
 			result.sessionId = session;
 			result.value = new Object();
-			result.value.message ='not implemented : '+genericPath;
+			result.value.message = 'not implemented : ' + genericPath;
 			sendCommandResult(result);
 		}
-		
+
 	}
 
 	function openURL(json) {
