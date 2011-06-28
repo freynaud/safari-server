@@ -1,0 +1,126 @@
+<!--
+ Global HTML Page to control the extension logic.
+ -->
+<!DOCTYPE HTML>
+
+<script type="text/javascript"
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script type="text/javascript" src="json.js"></script>
+
+<script>
+	// Set up the Listener
+	safari.application.addEventListener("command", performCommand, false);
+	safari.application.addEventListener("message", message, false);
+
+	var serverBase = "http://localhost:9999/safari-extension/session/";
+	var server = null;
+	var session = null;
+
+	var loading = false;
+
+	// Function to perform when event is received
+	function performCommand(event) {
+		// Make sure event comes from the button
+		var json = new Object();
+		json.content = new Object();
+		json.content.url = "bug"
+		processCommand(json);
+	}
+
+	function message(msgEvent) {
+
+		var name = msgEvent.name;
+		var data = msgEvent.message;
+
+		if (name === "loading") {
+			loading = data;
+		} else if (name === "init") {
+			session = data.session;
+			server = serverBase + session;
+			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("initDone", true);
+			waitForCommand();
+		} else {
+			waitForCommand();
+		}
+	}
+
+	/**
+	 * fetches the next command from the server.
+	 */
+	function waitForCommand() {
+		$.ajax({
+			url : server,
+			timeout : 3600000,
+			type : 'POST',
+			context : document.body,
+			success : function(data, textStatus, jqXHR) {
+				//alert('original string '+jqXHR.responseText);
+				var json = eval('(' + jqXHR.responseText + ')');
+				processCommand(json);
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				alert('error, cannot contact ' + server);
+			}
+		}); // end ajax
+	}
+
+	/*
+	pushes the result of the last command to the server.
+	 */
+	// result.status = 0
+	// result.message = "great success"
+	function sendCommandResult(result) {
+		var feedbackURL = server + "/result";
+		$.ajax({
+			url : feedbackURL,
+			timeout : 3600000,
+			type : 'POST',
+			data : JSON.stringify(result),
+			context : document.body,
+			success : function(data, textStatus, jqXHR) {
+				//alert('go ok');
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				alert('error, cannot send feedback to ' + feedbackURL);
+			}
+		}); // end ajax
+
+		waitForCommand();
+	}
+
+	function processCommand(json) {
+		var method = json.method;
+		var path = json.path;
+		var genericPath = json.genericPath;
+		var content = json.content;
+		//alert("generic:"+ genericPath+",method:"+method);
+		openURL(json);
+	}
+
+	function openURL(json) {
+		var result = new Object();
+		result.status = 0;
+		result.sessionId = session;
+		result.value = new Object();
+
+		var url = json.content.url;
+		safari.application.activeBrowserWindow.activeTab.url = url;
+		loading = true;
+
+		var check = setInterval(function() {
+			if (!loading) {
+				clearInterval(check);
+				sendCommandResult(result);
+			} else {
+				var current = safari.application.activeBrowserWindow.activeTab.url;
+				if (current) {
+				} else {
+					loading = false;
+					result.status = 13;
+					result.value.message = url + "cannot be loaded.";
+				}
+
+			}
+		}, 250);
+	}
+</script>
