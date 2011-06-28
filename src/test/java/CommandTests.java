@@ -77,6 +77,31 @@ public class CommandTests {
 		}
 	}
 	
+	@Test(invocationCount=load,threadPoolSize=load)
+	public void setValueGoogle() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://google.com");
+			WebElement el = driver.findElement(By.name("q"));
+			el.sendKeys("ferret");
+		} finally {
+			driver.quit();
+		}
+	}
+	
+	@Test(invocationCount=load,threadPoolSize=load)
+	public void click() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.get("http://ebay.co.uk");	
+			WebElement el = driver.findElement(By.id("registerLink"));
+			el.click();
+		} finally {
+			driver.quit();
+		}
+	}
 	
 
 	@AfterClass

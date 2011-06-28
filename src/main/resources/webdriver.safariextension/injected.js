@@ -25,6 +25,8 @@ function handleMessage(event) {
 				result = findElement(content);
 			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value") {
 				result = sendKeys(content);
+			}else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click") {
+				result = click(content);
 			} else {
 
 				result = result();
@@ -36,12 +38,15 @@ function handleMessage(event) {
 	}
 }
 
-function simulateClick(content) {
+function click(content) {
+	var result = createResult();
+	
 	var internalId = content.id;
 	var element = cache[internalId];
 	var evt = document.createEvent("MouseEvents");
 	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
 	element.dispatchEvent(evt);
+	return result;
 }
 
 function sendKeys(content) {
@@ -51,11 +56,12 @@ function sendKeys(content) {
 	var result = createResult();
 	if (element) {
 		element.focus();
-		log(value +" - "+value.length);
+		log(value + " - " + value.length);
 		for (i = 0; i < value.length; i++) {
 			var c = value[i];
 			keyDown(c, element);
-			element.value = element.value +c;
+			// TODO freynaud why ?
+			element.value = element.value + c;
 			keyUp(c, element);
 		}
 	} else {
@@ -72,13 +78,9 @@ function keyUp(key, el) {
 
 }
 function keyDown(key, el) {
-	log("1");
 	var evt = document.createEvent("KeyboardEvent");
-	log("1");
 	evt.initKeyboardEvent('keydown', false, true, null, false, false, false, false, 0, key);
-	log("1");
 	el.dispatchEvent(evt);
-	log("1");
 }
 
 function getTitle() {
@@ -94,24 +96,31 @@ function findElement(content) {
 	log('by ' + using + " = " + value);
 	var result = createResult();
 	log(result);
+	var el;
 	if (using === "id") {
-		var el = document.getElementById(value);
-		log('found ' + el);
-		if (el) {
-			var id = generateId();
-			log('new element found ' + id + ' using strategy ' + using + ', value =' + value);
-			result.value['ELEMENT'] = id;
-			cache[id] = el;
-		} else {
-			result.status = 7;
-			result.value.message = "page loaded:" + document.readyState + "couldn't find the element using strategy By." + using + "=" + value;
+		el = document.getElementById(value);
+	} else if (using === "name") {
+		var els = document.getElementsByName(value);
+		if (els.length > 0) {
+			el = els[0];
 		}
 	} else {
 		log("not supported strategy");
 		result.status = 13;
 		result.value.message = "finding strategy not supported " + using;
+		return result;
 	}
-	log(result);
+
+	log('found ' + el);
+	if (el) {
+		var id = generateId();
+		log('new element found ' + id + ' using strategy ' + using + ', value =' + value);
+		result.value['ELEMENT'] = id;
+		cache[id] = el;
+	} else {
+		result.status = 7;
+		result.value.message = "page loaded:" + document.readyState + "couldn't find the element using strategy By." + using + "=" + value;
+	}
 	return result;
 }
 

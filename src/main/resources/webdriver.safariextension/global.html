@@ -144,6 +144,9 @@
 		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value"){
 			return true;
 		}
+		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click"){
+			return true;
+		}
 		return false;
 	}
 
