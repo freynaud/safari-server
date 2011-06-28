@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 public class CommandTests {
 
-	protected final int load = 1; 
+	protected final int load = 10; 
 	
 	Driver d = new Driver();
 
@@ -102,6 +102,8 @@ public class CommandTests {
 			driver.quit();
 		}
 	}
+	
+	
 	
 
 	@AfterClass

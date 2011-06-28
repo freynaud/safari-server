@@ -2,7 +2,10 @@ var logAll = true;
 
 function newPageEventLoading() {
 	if (window.top === window) {
-		safari.self.tab.dispatchMessage("loading", true);
+		var page = new Object();
+		page.loading = true;
+		page.script = "start";
+		safari.self.tab.dispatchMessage("loading", page);
 	}
 }
 

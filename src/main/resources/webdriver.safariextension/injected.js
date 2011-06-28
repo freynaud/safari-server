@@ -16,7 +16,7 @@ function handleMessage(event) {
 			var path = json.path;
 			var genericPath = json.genericPath;
 			var content = json.content;
-
+			var version = json.version;
 			var result;
 
 			if (method === "GET" && genericPath === "/session/:sessionId/title") {
@@ -24,9 +24,9 @@ function handleMessage(event) {
 			} else if (method === "POST" && genericPath === "/session/:sessionId/element") {
 				result = findElement(content);
 			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value") {
-				result = sendKeys(content);
-			}else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click") {
-				result = click(content);
+				result = sendKeys(content,version);
+			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click") {
+				result = click(content,version);
 			} else {
 
 				result = result();
@@ -38,18 +38,20 @@ function handleMessage(event) {
 	}
 }
 
-function click(content) {
+function click(content,version) {
 	var result = createResult();
-	
+
 	var internalId = content.id;
 	var element = cache[internalId];
 	var evt = document.createEvent("MouseEvents");
 	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
 	element.dispatchEvent(evt);
+	result.change = true;
+	result.version = version;
 	return result;
 }
 
-function sendKeys(content) {
+function sendKeys(content,version) {
 	var internalId = content.id;
 	var value = content.value;
 	var element = cache[internalId];
@@ -68,6 +70,7 @@ function sendKeys(content) {
 		result.state = "10";
 		result.value.message = "element not in the cache";
 	}
+	result.version = version;
 	return result;
 }
 
@@ -172,10 +175,16 @@ function assignPageId() {
 }
 function newPageLoadedEvent() {
 	if (window.top === window) {
-		safari.self.tab.dispatchMessage("loading", false);
+		var page = new Object();
+		page.loading = false;
+		page.script = "end";
+		page.id = id;
+		safari.self.tab.dispatchMessage("loading", page);
+		log(id);
 	}
-}
 
+}
+var id = guidGenerator();
 newPageLoadedEvent();
 
 function isSelectedPage() {
