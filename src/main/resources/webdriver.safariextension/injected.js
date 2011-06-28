@@ -10,12 +10,24 @@ function handleMessage(event) {
 
 		if (isSelectedPage()) {
 			var json = event.message;
-			alert('got command ' + name + json);
+			
+			var method = json.method;
+			var path = json.path;
+			var genericPath = json.genericPath;
+			var content = json.content;
+			
 			var result = new Object();
-			result.status = 13;
+			result.status = 0;
+			result.session = "TODO in global";
 			result.value = new Object();
-			result.value.message = "not implemented in the injected script.";
-
+			
+			if (method === "GET" && genericPath === "/session/:sessionId/title"){
+				var title = window.document.title;
+				result.value = title;
+			} else {
+				result.status = 13;
+				result.value.message = "Command "+method+" : "+ genericPath+" is not implemented in injected.js";
+			}
 			safari.self.tab.dispatchMessage("result", result);
 		}
 	}

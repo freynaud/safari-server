@@ -21,6 +21,8 @@
 		<key>Toolbar Items</key>
 		<array>
 			<dict>
+				<key>Command</key>
+				<string>debug</string>
 				<key>Identifier</key>
 				<string>WebDriver</string>
 				<key>Image</key>

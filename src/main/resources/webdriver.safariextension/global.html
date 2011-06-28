@@ -20,11 +20,14 @@
 
 	// Function to perform when event is received
 	function performCommand(event) {
-		// Make sure event comes from the button
+		
 		var json = new Object();
+		json.method = "GET";
+		json.path = "path";
+		json.genericPath = "/session/:sessionId/title";
 		json.content = new Object();
-		json.content.url = "bug"
-		processCommand(json);
+		
+		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 	}
 
 	function message(msgEvent) {
@@ -102,7 +105,6 @@
 		if (method === "POST" && genericPath === "/session/:sessionId/url") {
 			openURL(json);
 		} else if (method === "GET" && genericPath === "/session/:sessionId/title") {
-			alert('sending getTtile');
 			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 		} else {
 			var result = new Object();
