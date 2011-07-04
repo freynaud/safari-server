@@ -1,0 +1,162 @@
+<!--
+ Global HTML Page to control the extension logic.
+ -->
+<!DOCTYPE HTML>
+
+<script type="text/javascript"
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script type="text/javascript" src="json.js"></script>
+
+<script>
+	// Set up the Listener
+	//safari.application.addEventListener("command", performCommand, false);
+	//safari.application.addEventListener("message", message, false);
+
+	WebDriver = function() {
+		this.serverBase = "http://localhost:9999/safari-extension/session/";
+		// server bound to this extension instance.
+		this.server = null;
+		// webdriver sessionId
+		this.session = null;
+		// the version of this test session.
+		this.version = 0;
+		//
+		this.methods = {};
+
+		this.scriptId = null;
+
+	};
+
+	WebDriver.prototype.init = function() {
+		this.serverBase = "http://localhost:9999/safari-extension/session/";
+		
+		this.methods["/session/:sessionId/url"] = this.get;
+	};
+
+	WebDriver.prototype.sendResult = function(result) {
+		var feedbackURL = this.server + "/result";
+		$.ajax({
+			url : feedbackURL,
+			timeout : 3600000,
+			type : 'POST',
+			data : JSON.stringify(result),
+			context : document.body,
+			success : function(data, textStatus, jqXHR) {
+				//alert('go ok');
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				//alert('error, cannot send feedback to ' + feedbackURL);
+			}
+		}); // end ajax
+		this.waitForCommand();
+	}
+
+	WebDriver.prototype.get = function(json) {
+		var result = new Object();
+		result.status = 0;
+		result.sessionId = this.session;
+		result.value = new Object();
+		var url = json.content.url;
+		safari.application.activeBrowserWindow.activeTab.url = url;
+		this.loading = true;
+		var check = setInterval(function() {
+			if (!webdriver.loading) {
+				clearInterval(check);
+				webdriver.sendResult(result);
+			} else {
+				var current = safari.application.activeBrowserWindow.activeTab.url;
+				if (current) {
+				} else {
+					webdriver.loading = false;
+					result.status = 13;
+					result.value.message = url + "cannot be loaded.";
+				}
+			}
+		}, 250);
+	};
+
+	
+
+	WebDriver.prototype.onMessage = function(msgEvent) {
+		var name = msgEvent.name;
+		var data = msgEvent.message;
+
+		if (name === "loading") {
+			loading = data.loading;
+			var type = data.script;
+			scriptId = data.id;
+			version = version + 1;
+			//log = log + "loading  " + loading + " version:" + version + "at " + (new Date().getTime() - start) + " ms.  URL:" + safari.application.activeBrowserWindow.activeTab.url + "\n";
+		} else if (name === "init") {
+			var session = data.session;
+			webdriver.setSession(session);
+			webdriver.waitForCommand();
+		} else if (name === "result") {
+			var result = data;
+			result.session = session;
+			webdriver.sendResult(result);
+
+		} else if (name === "pageUpdate") {
+			alert("page update");
+		} else if (name === "getCurrentPage") {
+			currentPage = data;
+		} else if (name === "pong") {
+			pong = true;
+			state = data;
+		} else {
+			this.waitForCommand();
+		}
+	};
+
+	// blocks until the next command is received. TODO : websockets.
+	WebDriver.prototype.waitForCommand = function() {
+		$.ajax({
+			url : this.server,
+			timeout : 3600000,
+			type : 'POST',
+			context : document.body,
+			success : function(data, textStatus, jqXHR) {
+				alert('original string ' + jqXHR.responseText);
+				var json = eval('(' + jqXHR.responseText + ')');
+				alert('json ' + json);
+				webdriver.processCommand(json);
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				this.error('error, cannot contact ' + server);
+			}
+		}); // end ajax
+	};
+
+	WebDriver.prototype.processCommand = function(json) {
+		var m = this.methods[json.genericPath];
+		if (m){
+			m(json);
+		}else {
+			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
+		}
+	};
+	
+	WebDriver.prototype.alert = function() {
+		alert("alrt");
+		this.debug();
+	};
+
+	WebDriver.prototype.error = function(msg) {
+		alert("Error :" + msg);
+	};
+
+	WebDriver.prototype.setSession = function(session) {
+		if (this.session == null) {
+			webdriver.session = session;
+			webdriver.server = this.serverBase + session;
+		} else {
+			this.error("session can only be set once.Session found " + this.session);
+		}
+	};
+
+	var webdriver = new WebDriver();
+	webdriver.init();
+	//webdriver.alert();
+	safari.application.addEventListener("message", webdriver.onMessage, false);
+	safari.application.addEventListener("command", webdriver.debug, false);
+</script>

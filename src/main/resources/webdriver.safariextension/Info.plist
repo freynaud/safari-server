@@ -17,7 +17,7 @@
 	<key>Chrome</key>
 	<dict>
 		<key>Global Page</key>
-		<string>global.html</string>
+		<string>webdriver-global.html</string>
 		<key>Toolbar Items</key>
 		<array>
 			<dict>

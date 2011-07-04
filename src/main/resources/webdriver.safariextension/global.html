@@ -16,18 +16,26 @@
 	var server = null;
 	var session = null;
 
+	// id of the page currently loaded.
+	var scriptId;
+	// state of the currently loaded page
 	var loading = false;
+	// version of the test.Incremented once when a page is loading, and once when it's loaded. Page transition = version+2.
 	var version = 0;
 	
+	
+	var pong = false;
+	var state = "default";
+
 	// id= injected script UUID , state=document.readyState
 	var currentPage = new Object();
 
 	var log = "GLOBAL";
+	var start = new Date().getTime();
 
 	// Function to perform when event is received
 	function performCommand(event) {
 
-		
 		/*var json = new Object();
 		json.method = "POST";
 		json.path = "path";
@@ -47,9 +55,20 @@
 		json.content.value="ferret";
 
 		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);*/
-		newPageDetector();
-	
-		
+		ping();
+
+	}
+
+	function ping() {
+		start = new Date().getTime();
+		pong = false;
+		safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("ping", scriptId);
+		var check = setInterval(function() {
+			if (pong) {
+				clearInterval(check);
+				alert("ok" + (new Date().getTime() - start) + " ms. state:"+state);
+			}
+		}, 5);
 	}
 
 	function message(msgEvent) {
@@ -60,9 +79,9 @@
 		if (name === "loading") {
 			loading = data.loading;
 			var type = data.script;
-			var scriptId = data.id;
-			version = version +1 ;
-			log = log + "loading  "+ loading +" version:"+version+"\n";
+			scriptId = data.id;
+			version = version + 1;
+			//log = log + "loading  " + loading + " version:" + version + "at " + (new Date().getTime() - start) + " ms.  URL:" + safari.application.activeBrowserWindow.activeTab.url + "\n";
 		} else if (name === "init") {
 			session = data.session;
 			server = serverBase + session;
@@ -74,9 +93,12 @@
 			sendCommandResult(result);
 
 		} else if (name === "pageUpdate") {
-			alert("page update");		
-		} else if (name === "getCurrentPage"){
+			alert("page update");
+		} else if (name === "getCurrentPage") {
 			currentPage = data;
+		} else if (name === "pong") {
+			pong = true;
+			state = data;
 		} else {
 			waitForCommand();
 		}
@@ -102,79 +124,93 @@
 		}); // end ajax
 	}
 
-
 	function sendCommandResult(result) {
 
-		var dirty = false;
-		if (dirty){
+		var dirty = true;
+		if (dirty) {
 			sendCommandResultDirty(result);
-		}else {
+		} else {
 			sendCommandResultClean(result);
 		}
-		
+
 	}
-	
-	
+
 	/**
 	dirty strategy : consider that the page is loaded if nothing ( no version change ) happens for a certain period of time.( limit * wait ms.)
-	*/
+	 */
 	function sendCommandResultDirty(result) {
 		var limit = 2;
 		var wait = 250;
 		var timeout = 15000;
 		var expire = new Date().getTime() + 15000;
-		if (result.change){
+		if (result.change) {
 			var v = version;
 			var c = 0;
 			var check = setInterval(function() {
-				if (new Date().getTime() > expire ){
+				if (new Date().getTime() > expire) {
 					clearInterval(check);
 					sendResult(result);
 				}
-				
-				if (version == v){
-					if (!loading){
-						c = c+1;	
+
+				if (version == v) {
+					if (!loading) {
+						c = c + 1;
 					}
-					if (c==limit){
+					if (c == limit) {
 						clearInterval(check);
 						sendResult(result);
 					}
 				} else {
-					c=0;
+					c = 0;
 					v = version;
 				}
 			}, wait);
-		}else {
-			sendResult(result);	
+		} else {
+			sendResult(result);
 		}
 	}
-	
+
 	/**
 	try to be more cleaver. Version is updated each time a pages starts to load and finishes loading, so theoratically, when version = version + 2, the following page has been loaded.
-	*/
+	 */
 	function sendCommandResultClean(result) {
-		var timeout = 15000;
-		var expire = new Date().getTime() + 15000;
-		if (result.change){
-			var expectedVersion = result.version + 2;
-			var check = setInterval(function() {
-				if (new Date().getTime() > expire ){
+		//alert("will send "+result);
+		var timeout = 5000;
+		var expire = new Date().getTime() + 5000;
+		var waitForLoadStart = new Date().getTime() + 100;
+		var waitForLoadEnd = new Date().getTime() + 500;
+
+		var expectedVersion = result.version + 2;
+		var pageChange = false;
+
+		var decision = false;
+		pong = false;
+
+		var check = setInterval(function() {
+			if (result.change) {
+				if (new Date().getTime() > expire) {
+					log = log +"time out \n";
 					clearInterval(check);
 					sendResult(result);
 				}
-				if (version == expectedVersion){
-					clearInterval(check);
-					sendResult(result);
+				if (pong == true) {
+					log = log +  state +":"+loading+":"+safari.application.activeBrowserWindow.activeTab.url+ ",\t";
+				}else {
+					log = log + "NONE,\t";
 				}
-			}, 250);
-		}else {
-			sendResult(result);	
-		}
-		
+				pong = false;
+				safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("ping", result.id);
+			}else {
+				log = log + "returning, no change expected here\n";
+				clearInterval(check);
+				sendResult(result);
+			}
+
+		}, 100);
+
 	}
-	
-	function sendResult(result){
+
+	function sendResult(result) {
 		var feedbackURL = server + "/result";
 		$.ajax({
 			url : feedbackURL,
@@ -202,7 +238,7 @@
 		if (method === "POST" && genericPath === "/session/:sessionId/url") {
 			openURL(json);
 		} else if (shouldDelegateToInjected(json)) {
-			log = log +" send cmd"+json.genericPath+"\n";
+			log = log + " send cmd" + json.genericPath + "\n";
 			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 		} else {
 			var result = new Object();
@@ -220,21 +256,22 @@
 		var content = json.content;
 		//alert(method + " - "+ genericPath);
 		if (method === "GET" && genericPath === "/session/:sessionId/title") {
+			alert(log);
 			return true;
 		}
 		if (method === "POST" && genericPath === "/session/:sessionId/element") {
 			return true;
 		}
-		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value"){
+		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value") {
 			return true;
 		}
-		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click"){
+		if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click") {
+			start = new Date().getTime();
+			log = "";
 			return true;
 		}
 		return false;
 	}
-	
-	
 
 	function openURL(json) {
 		var result = new Object();
@@ -263,5 +300,4 @@
 		}, 250);
 	}
 	//alert(safari.application.activeBrowserWindow.activeTab.url);
-	
 </script>

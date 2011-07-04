@@ -3,7 +3,8 @@ var logAll = true;
 var cache = new Object();
 
 function handleMessage(event) {
-	log('injected script got event ' + event.name + " , with content=" + event.message);
+	log('injected script got event ' + event.name + " , with content="
+			+ event.message);
 
 	var name = event.name;
 
@@ -21,37 +22,49 @@ function handleMessage(event) {
 
 			if (method === "GET" && genericPath === "/session/:sessionId/title") {
 				result = getTitle();
-			} else if (method === "POST" && genericPath === "/session/:sessionId/element") {
+			} else if (method === "POST"
+					&& genericPath === "/session/:sessionId/element") {
 				result = findElement(content);
-			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/value") {
-				result = sendKeys(content,version);
-			} else if (method === "POST" && genericPath === "/session/:sessionId/element/:id/click") {
-				result = click(content,version);
+			} else if (method === "POST"
+					&& genericPath === "/session/:sessionId/element/:id/value") {
+				result = sendKeys(content, version);
+			} else if (method === "POST"
+					&& genericPath === "/session/:sessionId/element/:id/click") {
+				result = click(content, version);
 			} else {
 
 				result = result();
 				result.status = 13;
-				result.value.message = "INJECTED : " + method + " : " + genericPath + " is not implemented in injected.js";
+				result.value.message = "INJECTED : " + method + " : "
+						+ genericPath + " is not implemented in injected.js";
 			}
 			safari.self.tab.dispatchMessage("result", result);
 		}
+	} else if (name ==="ping"){
+		var requestScriptId = event.message;
+		log("got ping on "+requestScriptId+" , I am "+id);
+		if (id === requestScriptId){
+			safari.self.tab.dispatchMessage("pong", document.readyState);
+		}
+		
 	}
 }
 
-function click(content,version) {
+function click(content, version) {
 	var result = createResult();
 
 	var internalId = content.id;
 	var element = cache[internalId];
 	var evt = document.createEvent("MouseEvents");
-	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false,
+			false, false, false, 0, null);
 	element.dispatchEvent(evt);
 	result.change = true;
 	result.version = version;
 	return result;
 }
 
-function sendKeys(content,version) {
+function sendKeys(content, version) {
 	var internalId = content.id;
 	var value = content.value;
 	var element = cache[internalId];
@@ -76,13 +89,15 @@ function sendKeys(content,version) {
 
 function keyUp(key, el) {
 	var evt = document.createEvent("KeyboardEvent");
-	evt.initKeyboardEvent('keyup', false, true, null, false, false, false, false, 0, key);
+	evt.initKeyboardEvent('keyup', false, true, null, false, false, false,
+			false, 0, key);
 	el.dispatchEvent(evt);
 
 }
 function keyDown(key, el) {
 	var evt = document.createEvent("KeyboardEvent");
-	evt.initKeyboardEvent('keydown', false, true, null, false, false, false, false, 0, key);
+	evt.initKeyboardEvent('keydown', false, true, null, false, false, false,
+			false, 0, key);
 	el.dispatchEvent(evt);
 }
 
@@ -92,6 +107,9 @@ function getTitle() {
 	result.value = title;
 	return result;
 }
+
+
+
 function findElement(content) {
 	log("find element");
 	var using = content.using;
@@ -117,12 +135,15 @@ function findElement(content) {
 	log('found ' + el);
 	if (el) {
 		var id = generateId();
-		log('new element found ' + id + ' using strategy ' + using + ', value =' + value);
+		log('new element found ' + id + ' using strategy ' + using
+				+ ', value =' + value);
 		result.value['ELEMENT'] = id;
 		cache[id] = el;
 	} else {
 		result.status = 7;
-		result.value.message = "page loaded:" + document.readyState + "couldn't find the element using strategy By." + using + "=" + value;
+		result.value.message = "page loaded:" + document.readyState
+				+ "couldn't find the element using strategy By." + using + "="
+				+ value;
 	}
 	return result;
 }
@@ -141,13 +162,15 @@ function inspect() {
 	console.log('found ' + iframes.length + ' iframes');
 	console.log('found ' + divs.length + ' divs');
 	for (i = 0; i < iframes.length; i++) {
-		console.log('found iframe ' + document.location.href + " ,src=" + iframes[i].src);
+		console.log('found iframe ' + document.location.href + " ,src="
+				+ iframes[i].src);
 	}
 }
 
 function createResult() {
 	var result = new Object();
 	result.status = 0;
+	result.id = id;
 	result.session = "TODO in global";
 	result.value = new Object();
 	return result;
@@ -157,7 +180,8 @@ function guidGenerator() {
 	var S4 = function() {
 		return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
 	};
-	return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+	return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4()
+			+ S4() + S4());
 }
 
 function assignPageId() {

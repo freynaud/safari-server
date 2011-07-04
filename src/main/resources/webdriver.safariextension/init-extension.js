@@ -1,5 +1,4 @@
 function init() {
-	
 	var session = getSession();
 	if (session) {
 		var settings = new Object();
