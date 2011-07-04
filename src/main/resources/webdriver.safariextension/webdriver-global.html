@@ -29,11 +29,82 @@
 
 	WebDriver.prototype.init = function() {
 		this.serverBase = "http://localhost:9999/safari-extension/session/";
-		
-		this.methods["/session/:sessionId/url"] = this.get;
+		this.methods["POST /session/:sessionId/url"] = this.setURL;
+		this.methods["POST /session/:sessionId/title"] = this.getTitle;
+		this.methods["GET /session/:sessionId/url"] = this.getURL;
+
 	};
 
+	/**
+	* load the url
+	*/
+	WebDriver.prototype.setURL = function(json) {
+		var result = webdriver.result();
+		var url = json.content.url;
+		var version = webdriver.version;
+		safari.application.activeBrowserWindow.activeTab.url = url;
+		var check = setInterval(function() {
+			// TODO check for timeout
+			if (webdriver.version >= (version + 2)) {
+				clearInterval(check);
+				webdriver.sendResult_(result);
+			}
+		}, 250);
+	};
+	
+	/**
+	* returns the url of the current page
+	*/
+	WebDriver.prototype.getURL = function(json) {
+		var result = webdriver.result();
+		result.value = safari.application.activeBrowserWindow.activeTab.url;
+		webdriver.sendResult_(result);
+	};
+
+	/**
+	* returns the title of the current page
+	*/
+	WebDriver.prototype.getTitle = function(json) {
+		var result = webdriver.result();
+		result.value = safari.application.activeBrowserWindow.activeTab.title;
+		webdriver.sendResult_(result);
+	};
+	
+	
+
 	WebDriver.prototype.sendResult = function(result) {
+		var limit = 4;
+		var wait = 250;
+		// if the page isn't loaded after 5 sec, give up.
+		var timeout = 10000;
+		var expire = new Date().getTime() + timeout;
+		if (result.change) {
+			var v = webdriver.version;
+			var c = 0;
+			var check = setInterval(function() {
+				if (new Date().getTime() > expire) {
+					clearInterval(check);
+					webdriver.sendResult_(result);
+				}
+
+				if (webdriver.version == v) {
+					if (!webdriver.loading) {
+						c = c + 1;
+					}
+					if (c == limit) {
+						clearInterval(check);
+						webdriver.sendResult_(result);
+					}
+				} else {
+					c = 0;
+					v = webdriver.version;
+				}
+			}, wait);
+		} else {
+			webdriver.sendResult_(result);
+		}
+	}
+	WebDriver.prototype.sendResult_ = function(result) {
 		var feedbackURL = this.server + "/result";
 		$.ajax({
 			url : feedbackURL,
@@ -51,41 +122,15 @@
 		this.waitForCommand();
 	}
 
-	WebDriver.prototype.get = function(json) {
-		var result = new Object();
-		result.status = 0;
-		result.sessionId = this.session;
-		result.value = new Object();
-		var url = json.content.url;
-		safari.application.activeBrowserWindow.activeTab.url = url;
-		this.loading = true;
-		var check = setInterval(function() {
-			if (!webdriver.loading) {
-				clearInterval(check);
-				webdriver.sendResult(result);
-			} else {
-				var current = safari.application.activeBrowserWindow.activeTab.url;
-				if (current) {
-				} else {
-					webdriver.loading = false;
-					result.status = 13;
-					result.value.message = url + "cannot be loaded.";
-				}
-			}
-		}, 250);
-	};
-
-	
-
 	WebDriver.prototype.onMessage = function(msgEvent) {
 		var name = msgEvent.name;
 		var data = msgEvent.message;
 
 		if (name === "loading") {
-			loading = data.loading;
+			webdriver.loading = data.loading;
 			var type = data.script;
-			scriptId = data.id;
-			version = version + 1;
+			webdriver.scriptId = data.id;
+			webdriver.version = webdriver.version + 1;
 			//log = log + "loading  " + loading + " version:" + version + "at " + (new Date().getTime() - start) + " ms.  URL:" + safari.application.activeBrowserWindow.activeTab.url + "\n";
 		} else if (name === "init") {
 			var session = data.session;
@@ -116,9 +161,8 @@
 			type : 'POST',
 			context : document.body,
 			success : function(data, textStatus, jqXHR) {
-				alert('original string ' + jqXHR.responseText);
+				//alert('original string ' + jqXHR.responseText);
 				var json = eval('(' + jqXHR.responseText + ')');
-				alert('json ' + json);
 				webdriver.processCommand(json);
 			},
 			error : function(jqXHR, textStatus, errorThrown) {
@@ -128,21 +172,32 @@
 	};
 
 	WebDriver.prototype.processCommand = function(json) {
-		var m = this.methods[json.genericPath];
-		if (m){
+		var cmd = json.method+' '+json.genericPath;
+		var m = this.methods[cmd];
+		if (m) {
 			m(json);
-		}else {
+		} else {
 			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("command", json);
 		}
-	};
-	
-	WebDriver.prototype.alert = function() {
-		alert("alrt");
-		this.debug();
 	};
 
 	WebDriver.prototype.error = function(msg) {
 		alert("Error :" + msg);
+	};
+	
+	WebDriver.prototype.result = function() {
+		var result = new Object();
+		result.status = 0;
+		result.sessionId = this.session;
+		result.change = false;
+		result.value = new Object();
+		return result;
+	};
+	
+	WebDriver.prototype.debug = function(msg) {
+		alert("ok");
+		alert(webdriver.methods);
+		alert("m :" + webdriver.methods["POST /session/:sessionId/url"]);
 	};
 
 	WebDriver.prototype.setSession = function(session) {
@@ -156,7 +211,7 @@
 
 	var webdriver = new WebDriver();
 	webdriver.init();
-	//webdriver.alert();
+
 	safari.application.addEventListener("message", webdriver.onMessage, false);
 	safari.application.addEventListener("command", webdriver.debug, false);
 </script>
