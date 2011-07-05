@@ -1,18 +1,42 @@
-safari.self.addEventListener("message", handleMessage, false);
 var logAll = true;
-var cache = new Object();
 
-function handleMessage(event) {
-	log('injected script got event ' + event.name + " , with content="
-			+ event.message);
+Injected = function() {
+	// page unique ID
+	this.id = null;
+	// id for the element cache
+	this.currentId = 0;
 
+	this.cache = new Object();
+
+	this.methods = {};
+
+};
+
+Injected.prototype.init = function() {
+	this.methods["POST /session/:sessionId/element"] = this.findElement;
+	this.methods["POST /session/:sessionId/elements"] = this.findElements;
+	this.methods["POST /session/:sessionId/element/:id/value"] = this.sendKeys;
+	this.methods["POST /session/:sessionId/element/:id/click"] = this.click;
+	this.id = injected.UUID();
+	safari.self.addEventListener("message", injected.handleMessage, false);
+
+};
+
+Injected.prototype.UUID = function() {
+	log("uuid");
+	var S4 = function() {
+		return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+	};
+	
+	return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+};
+
+Injected.prototype.handleMessage = function(event) {
 	var name = event.name;
 
 	if (name === "command") {
-
-		if (isSelectedPage()) {
+		if (injected.isSelectedPage()) {
 			var json = event.message;
-
 			var method = json.method;
 			var path = json.path;
 			var genericPath = json.genericPath;
@@ -20,41 +44,34 @@ function handleMessage(event) {
 			var version = json.version;
 			var result;
 
-			if (method === "GET" && genericPath === "/session/:sessionId/title") {
-				result = getTitle();
-			} else if (method === "POST"
-					&& genericPath === "/session/:sessionId/element") {
-				result = findElement(content);
-			} else if (method === "POST"
-					&& genericPath === "/session/:sessionId/element/:id/value") {
-				result = sendKeys(content, version);
-			} else if (method === "POST"
-					&& genericPath === "/session/:sessionId/element/:id/click") {
-				result = click(content, version);
+			var m = injected.methods[json.method + " " + json.genericPath]
+			if (m) {
+				result = m(json);
 			} else {
-
-				result = result();
+				result = createResult();
 				result.status = 13;
 				result.value.message = "INJECTED : " + method + " : "
 						+ genericPath + " is not implemented in injected.js";
 			}
 			safari.self.tab.dispatchMessage("result", result);
 		}
-	} else if (name ==="ping"){
+	} else if (name === "ping") {
 		var requestScriptId = event.message;
-		log("got ping on "+requestScriptId+" , I am "+id);
-		if (id === requestScriptId){
+		log("got ping on " + requestScriptId + " , I am " + id);
+		if (id === requestScriptId) {
 			safari.self.tab.dispatchMessage("pong", document.readyState);
 		}
-		
 	}
-}
+};
 
-function click(content, version) {
+Injected.prototype.click = function(json) {
+	var version = json.version;
+	var content = json.content;
+
 	var result = createResult();
 
 	var internalId = content.id;
-	var element = cache[internalId];
+	var element = injected.cache[internalId];
 	var evt = document.createEvent("MouseEvents");
 	evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false,
 			false, false, false, 0, null);
@@ -62,22 +79,25 @@ function click(content, version) {
 	result.change = true;
 	result.version = version;
 	return result;
-}
+};
 
-function sendKeys(content, version) {
+Injected.prototype.sendKeys = function(json) {
+	var version = json.version;
+	var content = json.content;
+
 	var internalId = content.id;
 	var value = content.value;
-	var element = cache[internalId];
+	var element = injected.cache[internalId];
 	var result = createResult();
 	if (element) {
 		element.focus();
 		log(value + " - " + value.length);
 		for (i = 0; i < value.length; i++) {
 			var c = value[i];
-			keyDown(c, element);
+			injected.keyDown(c, element);
 			// TODO freynaud why ?
 			element.value = element.value + c;
-			keyUp(c, element);
+			injected.keyUp(c, element);
 		}
 	} else {
 		result.state = "10";
@@ -85,32 +105,27 @@ function sendKeys(content, version) {
 	}
 	result.version = version;
 	return result;
-}
+};
 
-function keyUp(key, el) {
+Injected.prototype.keyUp = function(key, el) {
 	var evt = document.createEvent("KeyboardEvent");
 	evt.initKeyboardEvent('keyup', false, true, null, false, false, false,
 			false, 0, key);
 	el.dispatchEvent(evt);
 
-}
-function keyDown(key, el) {
+};
+
+Injected.prototype.keyDown = function(key, el) {
 	var evt = document.createEvent("KeyboardEvent");
 	evt.initKeyboardEvent('keydown', false, true, null, false, false, false,
 			false, 0, key);
 	el.dispatchEvent(evt);
-}
+};
 
-function getTitle() {
-	var title = window.document.title;
-	var result = createResult();
-	result.value = title;
-	return result;
-}
+Injected.prototype.findElement = function(json) {
+	var version = json.version;
+	var content = json.content;
 
-
-
-function findElement(content) {
 	log("find element");
 	var using = content.using;
 	var value = content.value;
@@ -134,11 +149,11 @@ function findElement(content) {
 
 	log('found ' + el);
 	if (el) {
-		var id = generateId();
+		var id = injected.generateId();
 		log('new element found ' + id + ' using strategy ' + using
 				+ ', value =' + value);
 		result.value['ELEMENT'] = id;
-		cache[id] = el;
+		injected.cache[id] = el;
 	} else {
 		result.status = 7;
 		result.value.message = "page loaded:" + document.readyState
@@ -146,13 +161,12 @@ function findElement(content) {
 				+ value;
 	}
 	return result;
-}
+};
 
-var currentId = 0;
-function generateId() {
-	currentId++;
-	return currentId;
-}
+Injected.prototype.generateId = function(json) {
+	this.currentId = this.currentId + 1;
+	return this.currentId;
+};
 
 function inspect() {
 	console.log('inspecting ' + document.location.href);
@@ -165,24 +179,16 @@ function inspect() {
 		console.log('found iframe ' + document.location.href + " ,src="
 				+ iframes[i].src);
 	}
-}
+};
 
 function createResult() {
 	var result = new Object();
 	result.status = 0;
-	result.id = id;
+	result.id = injected.id;
 	result.session = "TODO in global";
 	result.value = new Object();
 	return result;
-}
-
-function guidGenerator() {
-	var S4 = function() {
-		return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-	};
-	return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4()
-			+ S4() + S4());
-}
+};
 
 function assignPageId() {
 	if (window.top === window) {
@@ -196,27 +202,27 @@ function assignPageId() {
 		// log("title: "+window.document.title);
 		// log("url: "+window.document.URL);
 	}
-}
-function newPageLoadedEvent() {
+};
+Injected.prototype.sendNewPageLoadedEvent = function() {
 	if (window.top === window) {
 		var page = new Object();
 		page.loading = false;
 		page.script = "end";
-		page.id = id;
+		page.id = this.id;
 		safari.self.tab.dispatchMessage("loading", page);
-		log(id);
+		log(this.id);
 	}
-
-}
-var id = guidGenerator();
-newPageLoadedEvent();
-
-function isSelectedPage() {
+};
+Injected.prototype.isSelectedPage = function() {
 	return window.top === window;
-}
+};
+
+var injected = new Injected();
+injected.init();
+injected.sendNewPageLoadedEvent();
 
 function log(o) {
 	if (logAll) {
 		console.log(o);
 	}
-}
+};

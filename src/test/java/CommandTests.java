@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import org.openqa.Driver;
 import org.openqa.selenium.By;
@@ -111,6 +112,18 @@ public class CommandTests {
 			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
 			driver.get(url);
 			Assert.assertEquals(driver.getCurrentUrl(), url);
+		} finally {
+			driver.quit();
+		}
+	}
+	
+	@Test(invocationCount = load, threadPoolSize = load)
+	public void implicitWait() throws InterruptedException, IOException {
+		WebDriver driver = null;
+		try {
+			String url = "http://www.ebay.co.uk/";
+			driver = new RemoteWebDriver(new URL("http://localhost:9999/wd/hub"), DesiredCapabilities.firefox());
+			driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
 		} finally {
 			driver.quit();
 		}

@@ -24,14 +24,17 @@
 		this.methods = {};
 
 		this.scriptId = null;
+		this.implicitWait = 0;
 
 	};
 
 	WebDriver.prototype.init = function() {
 		this.serverBase = "http://localhost:9999/safari-extension/session/";
 		this.methods["POST /session/:sessionId/url"] = this.setURL;
-		this.methods["POST /session/:sessionId/title"] = this.getTitle;
+		this.methods["GET /session/:sessionId/title"] = this.getTitle;
 		this.methods["GET /session/:sessionId/url"] = this.getURL;
+		this.methods["POST /session/:sessionId/timeouts/implicit_wait"] = this.setImplicitWait;
+		
 
 	};
 
@@ -70,10 +73,19 @@
 		webdriver.sendResult_(result);
 	};
 	
+	/**
+	* set the implicit wait
+	*/
+	WebDriver.prototype.setImplicitWait = function(json) {
+		var result = webdriver.result();
+		webdriver.implicitWait = json.content.ms;
+		webdriver.sendResult_(result);
+	};
+	
 	
 
 	WebDriver.prototype.sendResult = function(result) {
-		var limit = 4;
+		var limit = 10;
 		var wait = 250;
 		// if the page isn't loaded after 5 sec, give up.
 		var timeout = 10000;
@@ -84,6 +96,7 @@
 			var check = setInterval(function() {
 				if (new Date().getTime() > expire) {
 					clearInterval(check);
+					result.timeout = true;
 					webdriver.sendResult_(result);
 				}
 
@@ -92,6 +105,7 @@
 						c = c + 1;
 					}
 					if (c == limit) {
+						result.limit = "reached="+c;
 						clearInterval(check);
 						webdriver.sendResult_(result);
 					}
@@ -101,6 +115,7 @@
 				}
 			}, wait);
 		} else {
+			
 			webdriver.sendResult_(result);
 		}
 	}
@@ -131,7 +146,6 @@
 			var type = data.script;
 			webdriver.scriptId = data.id;
 			webdriver.version = webdriver.version + 1;
-			//log = log + "loading  " + loading + " version:" + version + "at " + (new Date().getTime() - start) + " ms.  URL:" + safari.application.activeBrowserWindow.activeTab.url + "\n";
 		} else if (name === "init") {
 			var session = data.session;
 			webdriver.setSession(session);
@@ -140,7 +154,6 @@
 			var result = data;
 			result.session = session;
 			webdriver.sendResult(result);
-
 		} else if (name === "pageUpdate") {
 			alert("page update");
 		} else if (name === "getCurrentPage") {
